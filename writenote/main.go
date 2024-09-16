@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -21,14 +22,17 @@ type Config struct {
 
 // parse directory and read it
 func main() {
+	flag.Parse()
+	fileText := flag.Args()
 	var cfg Config
 	readFile(&cfg)
 	readEnv(&cfg)
 	fmt.Printf("%+v\n", cfg.Directory.NotesPath)
-	// fmt.Printf("%v", time.Now().Day())
-	writeNoteInFile(&cfg, "text")
-	fileText := []byte{71}
-	os.WriteFile("test.txt", fileText, 0644)
+	fmt.Printf("%v", fileText[len(fileText)-1])
+	if len(fileText) == 0 {
+		log.Fatal("Please enter text to add to notes")
+	}
+	writeNoteInFile(&cfg, fileText[len(fileText)-1])
 }
 func processError(err error) {
 	fmt.Println(err)
