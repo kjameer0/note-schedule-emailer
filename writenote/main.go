@@ -27,9 +27,7 @@ func main() {
 	var cfg Config
 	readFile(&cfg)
 	readEnv(&cfg)
-	fmt.Printf("%+v\n", cfg.Directory.NotesPath)
-	fmt.Printf("%v", fileText[len(fileText)-1])
-	if len(fileText) == 0 {
+	if len(fileText) != 1 {
 		log.Fatal("Please enter text to add to notes")
 	}
 	writeNoteInFile(&cfg, fileText[len(fileText)-1])
