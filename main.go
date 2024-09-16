@@ -38,3 +38,6 @@ func main() {
 	}
 	fmt.Println("Email Sent Successfully!")
 }
+
+//i basically need to grab the text from the last week's notes
+//then i just have to run this file as a cronjob every week
