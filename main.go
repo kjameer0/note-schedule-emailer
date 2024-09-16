@@ -1,10 +1,11 @@
 package main
-
+// this file runs the cron job tasks
 import (
 	"fmt"
 	"os"
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v3"
+	// "ioutil"
 )
 
 type Config struct {
@@ -19,6 +20,8 @@ func main() {
 	readFile(&cfg)
 	readEnv(&cfg)
 	fmt.Printf("%+v", cfg.Directory.NotesPath)
+	fileText := []byte{71}
+	os.WriteFile("test.txt", fileText, 0644)
 }
 func processError(err error) {
 	fmt.Println(err)
