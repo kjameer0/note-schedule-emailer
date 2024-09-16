@@ -1,48 +1,43 @@
 package main
-// this file runs the cron job tasks
+
 import (
 	"fmt"
+	"log"
+	"net/smtp"
 	"os"
-	"github.com/kelseyhightower/envconfig"
-	"gopkg.in/yaml.v3"
-	// "ioutil"
+
+	// Import godotenv
+	"github.com/joho/godotenv"
 )
 
-type Config struct {
-	Directory struct {
-		NotesPath string `yaml:"notesPath" envconfig:"DIR_NOTES_PATH"`
-	} `yaml:"directory"`
-}
-
-// parse directory and read it
 func main() {
-	var cfg Config
-	readFile(&cfg)
-	readEnv(&cfg)
-	fmt.Printf("%+v", cfg.Directory.NotesPath)
-	fileText := []byte{71}
-	os.WriteFile("test.txt", fileText, 0644)
-}
-func processError(err error) {
-	fmt.Println(err)
-	os.Exit(2)
-}
-func readFile(cfg *Config) {
-	f, err := os.Open("config.yml")
-	if err != nil {
-		processError(err)
-	}
-	defer f.Close()
+	err := godotenv.Load(".env")
+	from := os.Getenv("EMAIL_SENDER")
+	to := []string{os.Getenv("EMAIL_RECEIVER")}
+	password := os.Getenv("EMAIL_PASSWORD")
 
-	decoder := yaml.NewDecoder(f)
-	err = decoder.Decode(cfg)
 	if err != nil {
-		processError(err)
+		log.Fatalf("Error loading .env file")
 	}
-}
-func readEnv(cfg *Config) {
-	err := envconfig.Process("", cfg)
+
+	// smtp server configuration.
+	smtpHost := "smtp.gmail.com"
+	smtpPort := "587"
+
+	// Message.
+	message := []byte("This is a test email message.")
+
+	// Authentication.
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+
+	// Sending email.
+	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
 	if err != nil {
-		processError(err)
+		fmt.Println(err)
+		return
 	}
+	fmt.Println("Email Sent Successfully!")
 }
+
+//i basically need to grab the text from the last week's notes
+//then i just have to run this file as a cronjob every week
