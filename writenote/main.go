@@ -1,9 +1,13 @@
 package main
 
-
 import (
+	"errors"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/kelseyhightower/envconfig"
 	"gopkg.in/yaml.v3"
 	// "ioutil"
@@ -20,7 +24,9 @@ func main() {
 	var cfg Config
 	readFile(&cfg)
 	readEnv(&cfg)
-	fmt.Printf("%+v", cfg.Directory.NotesPath)
+	fmt.Printf("%+v\n", cfg.Directory.NotesPath)
+	// fmt.Printf("%v", time.Now().Day())
+	writeNoteInFile(&cfg, "text")
 	fileText := []byte{71}
 	os.WriteFile("test.txt", fileText, 0644)
 }
@@ -29,7 +35,7 @@ func processError(err error) {
 	os.Exit(2)
 }
 func readFile(cfg *Config) {
-	f, err := os.Open("config.yml")
+	f, err := os.Open("../config.yml")
 	if err != nil {
 		processError(err)
 	}
@@ -45,5 +51,31 @@ func readEnv(cfg *Config) {
 	err := envconfig.Process("", cfg)
 	if err != nil {
 		processError(err)
+	}
+}
+
+func writeNoteInFile(cfg *Config, noteText string) {
+	notesPath := cfg.Directory.NotesPath
+	localTime := time.Now()
+	currentMonth := localTime.Month()
+	currentDay := localTime.Day()
+	currentYear := localTime.Year()
+	fileName := fmt.Sprintf("%v-%02d-%02d", currentYear, int(currentMonth), currentDay)
+	filePath := filepath.Clean(notesPath) + string(filepath.Separator) + fileName + ".md"
+	f, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY, 0666)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			f, err = os.Create(filePath)
+			if err != nil {
+				log.Fatal("Failed to create new file for note.")
+			}
+		} else {
+			log.Fatal("Failed to open file specified by path " + "filePath")
+		}
+	}
+	defer f.Close()
+	_, err = f.Write([]byte("\n- " + noteText))
+	if err != nil {
+		log.Fatal("Failed to write to file specified by path", err)
 	}
 }
