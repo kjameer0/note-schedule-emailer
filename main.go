@@ -15,7 +15,7 @@ func main() {
 	from := os.Getenv("EMAIL_SENDER")
 	to := []string{os.Getenv("EMAIL_RECEIVER")}
 	password := os.Getenv("EMAIL_PASSWORD")
-
+	readLastWeekNotes()
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
@@ -41,3 +41,7 @@ func main() {
 
 //i basically need to grab the text from the last week's notes
 //then i just have to run this file as a cronjob every week
+func readLastWeekNotes() {
+	notesPath := os.Getenv("NOTES_PATH")
+	
+}
