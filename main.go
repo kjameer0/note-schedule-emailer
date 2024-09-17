@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -9,21 +10,28 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	openai "github.com/sashabaranov/go-openai"
 	// Import godotenv
 )
 
 func main() {
 	err := godotenv.Load(".env")
-	// from := os.Getenv("EMAIL_SENDER")
-	notesPath := os.Getenv("NOTES_PATH")
-	readLastWeekNotes(notesPath)
-	// to := []string{os.Getenv("EMAIL_RECEIVER")}
-	// password := os.Getenv("EMAIL_PASSWORD")
-	readLastWeekNotes(notesPath)
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
-
+	// from := os.Getenv("EMAIL_SENDER")
+	notesPath := os.Getenv("NOTES_PATH")
+	openaiKey := os.Getenv("OPEN_AI_KEY")
+	// password := os.Getenv("EMAIL_PASSWORD")
+	// to := []string{os.Getenv("EMAIL_RECEIVER")}
+	client := openai.NewClient(openaiKey)
+	notes := readLastWeekNotes(notesPath, client)
+	// summaries := []string{}
+	// for _, note := range notes {
+	// 	summaries = append(summaries, summarizeNote(client, note))
+	// }
+	fmt.Println(summarizeNote(client, notes[0]))
+	// fmt.Println(notes)
 	// // smtp server configuration.
 	// smtpHost := "smtp.gmail.com"
 	// smtpPort := "587"
@@ -45,10 +53,33 @@ func main() {
 
 // i basically need to grab the text from the last week's notes
 // then i just have to run this file as a cronjob every week
-func readLastWeekNotes(notesPath string) {
+func summarizeNote(client *openai.Client, content string) string {
+	prompt := "Summarize the text after this colon"
+	resp, err := client.CreateChatCompletion(
+		context.Background(),
+		openai.ChatCompletionRequest{
+			Model: openai.GPT4oMini,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: fmt.Sprintf("%v: %v", prompt, content),
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		log.Fatalf("ChatCompletion error: %v\n", err)
+	}
+
+	return (resp.Choices[0].Message.Content)
+}
+func readLastWeekNotes(notesPath string, client *openai.Client) []string {
 	localTime := time.Now()
 	daysInWeek := 7
 	//go through each file from the past 7 days every sunday
+	//make a and return that slice, which contains the notes from every day in the week
+	notes := []string{}
 	for daysFromToday := daysInWeek; daysFromToday > 0; daysFromToday -= 1 {
 		curFileName := (convertDateToFilePath(localTime.AddDate(0, 0, -daysFromToday)))
 		filePath := filepath.Clean(notesPath) + string(filepath.Separator) + curFileName + ".md"
@@ -60,11 +91,9 @@ func readLastWeekNotes(notesPath string) {
 				log.Fatal("Failed to open file specified by path " + filePath)
 			}
 		}
-		//request to a api to create a summary of that text
-		//write that text with a day of the week as a title
-		//after for loop return all text
-		fmt.Println(string(text))
+		notes = append(notes, string(text))
 	}
+	return notes
 }
 func convertDateToFilePath(date time.Time) string {
 	currentMonth := date.Month()
