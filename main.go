@@ -66,7 +66,7 @@ func main() {
 func summarizeNote(client *claude.Client, content string, dayOfWeek string) string {
 	prompt := "Summarize the text after this colon in about 3-4 sentences. If a summary cannot be made just say 'No summary available'."
 	m := claude.RequestBodyMessages{
-		Model:     "claude-3-opus-20240229",
+		Model:     "claude-3-5-sonnet-20240620",
 		MaxTokens: 400,
 		Messages: []claude.RequestBodyMessagesMessages{
 			{
@@ -74,7 +74,6 @@ func summarizeNote(client *claude.Client, content string, dayOfWeek string) stri
 				Content: fmt.Sprintf("%v: %v", prompt, content),
 			},
 		},
-
 	}
 	ctx := context.Background()
 	res, err := client.CreateMessages(ctx, m)
