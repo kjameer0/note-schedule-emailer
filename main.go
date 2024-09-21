@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/smtp"
 	"os"
 	"path/filepath"
 	"sync"
@@ -20,11 +21,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
-	// from := os.Getenv("EMAIL_SENDER")
+	// // smtp server configuration.
+	subject := "Subject: check out my notes!"
+	message := "This is the email body."
+	emailConfig := EmailConfig{
+		to:       []string{os.Getenv("EMAIL_RECEIVER")},
+		from:     os.Getenv("EMAIL_SENDER"),
+		password: os.Getenv("EMAIL_PASSWORD"),
+		smtpHost: "smtp.gmail.com",
+		smtpPort: "587",
+	}
+	sendEmail(emailConfig, subject, message)
 	notesPath := os.Getenv("NOTES_PATH")
 	apiKey := os.Getenv("API_KEY")
-	// password := os.Getenv("EMAIL_PASSWORD")
-	// to := []string{os.Getenv("EMAIL_RECEIVER")}
 	client := claude.NewClient(apiKey)
 	notes := readLastWeekNotes(notesPath)
 	summaries := []string{}
@@ -42,27 +51,36 @@ func main() {
 	}
 	wg.Wait()
 	fmt.Println(summaries)
-	// // smtp server configuration.
-	// smtpHost := "smtp.gmail.com"
-	// smtpPort := "587"
 
-	// // Message.
-	// message := []byte("This is a test email message.")
-
-	// // Authentication.
-	// auth := smtp.PlainAuth("", from, password, smtpHost)
-
-	// // Sending email.
-	// err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return
-	// }
-	// fmt.Println("Email Sent Successfully!")
 }
 
-// i basically need to grab the text from the last week's notes
-// then i just have to run this file as a cronjob every week
+type EmailConfig struct {
+	to       []string
+	from     string
+	password string
+	smtpHost string
+	smtpPort string
+}
+
+func sendEmail(emailConfig EmailConfig, subject string, message string) {
+
+	// // Message.
+	// // Authentication.
+	auth := smtp.PlainAuth("", emailConfig.from, emailConfig.password, emailConfig.smtpHost)
+	// // Sending email.
+	fullEmail := []byte(fmt.Sprintf("%v\r\n\r\n%v\r\n", subject, message))
+	err := smtp.SendMail(emailConfig.smtpHost+":"+emailConfig.smtpPort, auth, emailConfig.from, emailConfig.to, fullEmail)
+	if err != nil {
+		writeToLogFile(err.Error())
+		log.Fatal(err)
+		return
+	}
+	//write to log file
+	writeToLogFile("Email Sent Successfully!")
+	fmt.Println("Email Sent Successfully!")
+}
+
+// request a summary of the note from the client
 func summarizeNote(client *claude.Client, content string, dayOfWeek string) string {
 	prompt := "Summarize the text after this colon in about 3-4 sentences. If a summary cannot be made just say 'No summary available'."
 	m := claude.RequestBodyMessages{
@@ -122,5 +140,5 @@ func writeToLogFile(content string) {
 	defer file.Close()
 
 	logger := log.New(file, "", log.LstdFlags)
-	logger.Printf("%v", content)
+	logger.Printf("%v: %v", time.Now().Format("2006-01-02 15:04:05"), content)
 }
