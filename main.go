@@ -101,6 +101,9 @@ func sendEmail(emailConfig EmailConfig, subject string, message string) {
 // request a summary of the note from the client
 func summarizeNote(client *claude.Client, content string) (string, error) {
 	prompt := "Summarize the text after this colon in about 4 sentences. Do not reference that you are making a summary. If a summary cannot be made just say 'No summary available'. If a summary can be made, make sure you summarize every bullet point"
+	if len(content) == 0 {
+		return "No summary available", nil
+	}
 	m := claude.RequestBodyMessages{
 		Model:     "claude-3-5-sonnet-20240620",
 		MaxTokens: 400,
