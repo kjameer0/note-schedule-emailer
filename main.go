@@ -90,11 +90,10 @@ func sendEmail(emailConfig EmailConfig, subject string, message string) {
 	err := smtp.SendMail(emailConfig.smtpHost+":"+emailConfig.smtpPort, auth, emailConfig.from, emailConfig.to, fullEmail)
 	if err != nil {
 		writeToLogFile(err.Error())
-		log.Fatal(err)
+		os.Exit(1)
 		return
 	}
 	writeToLogFile("Email Sent Successfully!")
-	fmt.Println("Email Sent Successfully!")
 }
 
 // request a summary of the note from the client
