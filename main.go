@@ -63,9 +63,8 @@ func main() {
 			defer wg.Done()
 			summary, summaryErr := summarizeNote(client, note.Content)
 			if summaryErr != nil {
-				summary = "Summarization failed"
+				summary = "Summarization failed. Please check the logs for more details."
 				writeToLogFile(summaryErr.Error())
-				sendEmail(emailConfig, "Summarization failed", "Something went wrong while summarizing your notes. Please check the logs for more details.")
 			}
 			summaryStruct := Summary{
 				Day:     g,
@@ -100,13 +99,13 @@ func sendEmail(emailConfig EmailConfig, subject string, message string) {
 
 // request a summary of the note from the client
 func summarizeNote(client *claude.Client, content string) (string, error) {
-	prompt := "Summarize the text after this colon in about 4 sentences. Do not reference that you are making a summary. If a summary cannot be made just say 'No summary available'. If a summary can be made, make sure you summarize every bullet point"
+	prompt := "Summarize the text after this colon in about 4 sentences. Pretend you are the writer. Do not say that you are making a summary. If a summary cannot be made just say 'No summary available'. If a summary can be made, make sure you summarize every bullet point. Make sure you make reference to every bullet point in the note"
 	if len(content) == 0 {
 		return "No summary available", nil
 	}
 	m := claude.RequestBodyMessages{
 		Model:     "claude-3-5-sonnet-20240620",
-		MaxTokens: 400,
+		MaxTokens: 1000,
 		Messages: []claude.RequestBodyMessagesMessages{
 			{
 				Role:    claude.MessagesRoleUser,
@@ -119,7 +118,7 @@ func summarizeNote(client *claude.Client, content string) (string, error) {
 	if err != nil {
 		fmt.Println(err)
 		writeToLogFile(err.Error())
-		return "No summary available", err
+		return "Something went wrong while summarizing", err
 	}
 	return (res.Content[0].Text), nil
 }
@@ -134,6 +133,7 @@ func readLastWeekNotes(notesPath string) []Note {
 		textBytes, err := os.ReadFile(filePath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
+				notes = append(notes, Note{int(day.Weekday()), ""})
 				continue
 			} else {
 				writeToLogFile(err.Error())
@@ -150,6 +150,7 @@ func convertDateToFilePath(date time.Time) string {
 	currentYear := date.Year()
 	return fmt.Sprintf("%v-%02d-%02d", currentYear, int(currentMonth), currentDay)
 }
+
 func writeToLogFile(content string) {
 	logFile := "cronjob.log"
 	file, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
