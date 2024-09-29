@@ -1,4 +1,4 @@
 *.env
 *.log
 *.sh
-note-schedule-emailer
+note-schedule-*
