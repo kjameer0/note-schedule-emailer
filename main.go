@@ -114,6 +114,7 @@ func summarizeNote(client *claude.Client, content string) (string, error) {
 	}
 	ctx := context.Background()
 	res, err := client.CreateMessages(ctx, m)
+	fmt.Println(res)
 	if err != nil {
 		fmt.Println(err)
 		writeToLogFile(err.Error())
@@ -157,6 +158,7 @@ func writeToLogFile(content string) {
 		log.Printf("Failed to open log file: %v", err)
 		return
 	}
+	os.Stdout.Write([]byte(fmt.Sprintf("%v: %v", time.Now().Format("2006-01-02 15:04:05"), content)))
 	defer file.Close()
 
 	logger := log.New(file, "", log.LstdFlags)
